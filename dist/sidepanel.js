@@ -68,8 +68,19 @@
   getSettings().then(({ apiKey, model, voice }) => {
     for (const k of VOICE_FIELDS) $(k).value = voice[k];
     $("apiKey").value = apiKey;
-    $("model").value = model;
+    loadModels(model);
   });
+  function loadModels(selected) {
+    chrome.runtime.sendMessage({ type: "xw:models" }, (models) => {
+      $("model").innerHTML = models.map((m) => `<option value="${m.id}">${m.name}</option>`).join("");
+      if (models.some((m) => m.id === selected)) {
+        $("model").value = selected;
+      } else {
+        $("model").value = DEFAULT_MODEL;
+        chrome.storage.sync.set({ model: DEFAULT_MODEL });
+      }
+    });
+  }
   var saveTimer;
   document.querySelectorAll("[data-voice]").forEach(
     (el) => el.addEventListener("input", () => {
@@ -87,7 +98,8 @@
     })
   );
   $("save-settings").addEventListener("click", async () => {
-    await chrome.storage.sync.set({ apiKey: $("apiKey").value.trim(), model: $("model").value.trim() || DEFAULT_MODEL });
+    await chrome.storage.sync.set({ apiKey: $("apiKey").value.trim(), model: $("model").value || DEFAULT_MODEL });
     setStatus("settings-status", "\u05E0\u05E9\u05DE\u05E8.");
+    loadModels($("model").value);
   });
 })();

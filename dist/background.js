@@ -1406,6 +1406,7 @@ function buildSystemPrompt(voice) {
 ${text.trim()}`).join("\n\n");
   return [
     "You write X (Twitter) posts for one founder. He drafts in Hebrew (sometimes mixed with English); you turn the draft into a ready-to-post English post in his voice.",
+    "Always write the post in English. Never answer in Hebrew, even though the draft and these instructions may be in Hebrew.",
     "Return only the final post text - no preamble, no quotes around it, no notes, no hashtags unless the draft has them.",
     "Keep his meaning and his facts. Never invent numbers, customers, or claims that are not in the draft.",
     "# Voice profile\n" + voice_profile_default,
@@ -2495,9 +2496,9 @@ function filterLogger(logger, logLevel) {
   cachedLoggers.set(logger, [logLevel, levelLogger]);
   return levelLogger;
 }
-function loggerFor(client) {
-  const logger = client.logger;
-  const logLevel = client.logLevel ?? "off";
+function loggerFor(client2) {
+  const logger = client2.logger;
+  const logLevel = client2.logLevel ?? "off";
   if (!logger) {
     return noopLogger;
   }
@@ -3107,11 +3108,11 @@ init_error();
 var _Stream_client;
 var Stream = /* @__PURE__ */ (() => {
   class Stream2 {
-    constructor(iterator, controller, client) {
+    constructor(iterator, controller, client2) {
       this.iterator = iterator;
       _Stream_client.set(this, void 0);
       this.controller = controller;
-      __classPrivateFieldSet(this, _Stream_client, client, "f");
+      __classPrivateFieldSet(this, _Stream_client, client2, "f");
     }
     /**
      * Iterate the raw Server-Sent Events from `response` — `{event, data, raw}`
@@ -3124,9 +3125,9 @@ var Stream = /* @__PURE__ */ (() => {
     static rawEvents(response, controller = new AbortController()) {
       return _iterSSEMessages(response, controller);
     }
-    static fromSSEResponse(response, controller, client) {
+    static fromSSEResponse(response, controller, client2) {
       let consumed = false;
-      const logger = client ? loggerFor(client) : console;
+      const logger = client2 ? loggerFor(client2) : console;
       async function* iterator() {
         if (consumed) {
           throw new AnthropicError("Cannot iterate over a consumed stream, use `.tee()` to split the stream.");
@@ -3173,13 +3174,13 @@ var Stream = /* @__PURE__ */ (() => {
           releaseRequestSignal(controller);
         }
       }
-      return new Stream2(iterator, controller, client);
+      return new Stream2(iterator, controller, client2);
     }
     /**
      * Generates a Stream from a newline-separated ReadableStream
      * where each item is a JSON value.
      */
-    static fromReadableStream(readableStream, controller, client) {
+    static fromReadableStream(readableStream, controller, client2) {
       let consumed = false;
       async function* iterLines() {
         const lineDecoder = new LineDecoder();
@@ -3217,7 +3218,7 @@ var Stream = /* @__PURE__ */ (() => {
           releaseRequestSignal(controller);
         }
       }
-      return new Stream2(iterator, controller, client);
+      return new Stream2(iterator, controller, client2);
     }
     [(_Stream_client = /* @__PURE__ */ new WeakMap(), Symbol.asyncIterator)]() {
       return this.iterator();
@@ -3371,12 +3372,12 @@ function partition(str, delimiter) {
 }
 
 // node_modules/@anthropic-ai/sdk/internal/parse.mjs
-async function defaultParseResponse(client, props) {
+async function defaultParseResponse(client2, props) {
   const { response, requestLogID, retryOfRequestLogID, startTime } = props;
   const body = await (async () => {
     if (props.options.stream) {
-      loggerFor(client).debug("response", response.status, response.url, response.headers, response.body);
-      return Stream.fromSSEResponse(response, props.controller, client);
+      loggerFor(client2).debug("response", response.status, response.url, response.headers, response.body);
+      return Stream.fromSSEResponse(response, props.controller, client2);
     }
     if (response.status === 204) {
       return null;
@@ -3402,7 +3403,7 @@ async function defaultParseResponse(client, props) {
       releaseRequestSignal(props.controller);
     }
   });
-  debugLogRequestDetails(loggerFor(client), `[${requestLogID}] response parsed`, {
+  debugLogRequestDetails(loggerFor(client2), `[${requestLogID}] response parsed`, {
     retryOfRequestLogID,
     url: response.url,
     status: response.status,
@@ -3438,13 +3439,13 @@ function isRetryableError(err) {
   }
   return false;
 }
-function wrapFetchWithMiddleware(fetchFn, middleware, options, client) {
+function wrapFetchWithMiddleware(fetchFn, middleware, options, client2) {
   return async (url, init = {}) => {
     if (middleware.length === 0) {
       return fetchFn.call(void 0, url, init);
     }
     const headers = init.headers instanceof Headers ? init.headers : new Headers(init.headers);
-    const response = await applyMiddleware(fetchFn, middleware, options, client)({
+    const response = await applyMiddleware(fetchFn, middleware, options, client2)({
       ...init,
       headers,
       url: typeof url === "string" ? url : url instanceof URL ? url.href : url.url
@@ -3455,32 +3456,32 @@ function wrapFetchWithMiddleware(fetchFn, middleware, options, client) {
     return response;
   };
 }
-function createMiddlewareContext(options, client) {
+function createMiddlewareContext(options, client2) {
   const cache = /* @__PURE__ */ new WeakMap();
   return {
     options,
     // Resolved per chain, so changes to the client's `logLevel`/`logger`
     // apply to subsequent requests.
-    logger: client ? loggerFor(client) : defaultLogger(),
+    logger: client2 ? loggerFor(client2) : defaultLogger(),
     parse(response) {
       if (options?.stream && response.ok) {
-        return parseMiddlewareResponse(response, options, client);
+        return parseMiddlewareResponse(response, options, client2);
       }
       let parsed = cache.get(response);
       if (!parsed) {
-        parsed = parseMiddlewareResponse(response, options, client);
+        parsed = parseMiddlewareResponse(response, options, client2);
         cache.set(response, parsed);
       }
       return parsed;
     }
   };
 }
-async function parseMiddlewareResponse(response, options, client) {
+async function parseMiddlewareResponse(response, options, client2) {
   if (response.bodyUsed || response.body?.locked) {
     throw new AnthropicError("cannot ctx.parse() a response whose body was already consumed; call ctx.parse() instead of reading the body, or read via response.clone()");
   }
   if (options?.stream && response.ok) {
-    return Stream.fromSSEResponse(response.clone(), new AbortController(), client);
+    return Stream.fromSSEResponse(response.clone(), new AbortController(), client2);
   }
   if (response.status === 204) {
     return null;
@@ -3499,7 +3500,7 @@ async function parseMiddlewareResponse(response, options, client) {
   }
   return await response.clone().text();
 }
-function applyMiddleware(fetchFn, middleware, options, client) {
+function applyMiddleware(fetchFn, middleware, options, client2) {
   let next = async ({ url, ...init }) => {
     try {
       return await fetchFn.call(void 0, url, init);
@@ -3509,7 +3510,7 @@ function applyMiddleware(fetchFn, middleware, options, client) {
       throw error;
     }
   };
-  const ctx = createMiddlewareContext(options, client);
+  const ctx = createMiddlewareContext(options, client2);
   for (let i = middleware.length - 1; i >= 0; i--) {
     const mw = middleware[i];
     const nextInner = next;
@@ -3525,17 +3526,17 @@ init_error();
 var _APIPromise_client;
 var APIPromise = /* @__PURE__ */ (() => {
   class APIPromise2 extends Promise {
-    constructor(client, responsePromise, parseResponse = defaultParseResponse) {
+    constructor(client2, responsePromise, parseResponse = defaultParseResponse) {
       super((resolve) => {
         resolve(null);
       });
       this.responsePromise = responsePromise;
       this.parseResponse = parseResponse;
       _APIPromise_client.set(this, void 0);
-      __classPrivateFieldSet(this, _APIPromise_client, client, "f");
+      __classPrivateFieldSet(this, _APIPromise_client, client2, "f");
     }
     _thenUnwrap(transform) {
-      return new APIPromise2(__classPrivateFieldGet(this, _APIPromise_client, "f"), this.responsePromise, async (client, props) => addResponseIDs(transform(await this.parseResponse(client, props), props), props.response));
+      return new APIPromise2(__classPrivateFieldGet(this, _APIPromise_client, "f"), this.responsePromise, async (client2, props) => addResponseIDs(transform(await this.parseResponse(client2, props), props), props.response));
     }
     /**
      * Gets the raw `Response` instance instead of parsing the response
@@ -3596,9 +3597,9 @@ var APIPromise = /* @__PURE__ */ (() => {
 var _AbstractPage_client;
 var AbstractPage = /* @__PURE__ */ (() => {
   class AbstractPage2 {
-    constructor(client, response, body, options) {
+    constructor(client2, response, body, options) {
       _AbstractPage_client.set(this, void 0);
-      __classPrivateFieldSet(this, _AbstractPage_client, client, "f");
+      __classPrivateFieldSet(this, _AbstractPage_client, client2, "f");
       this.options = options;
       this.response = response;
       this.body = body;
@@ -3636,8 +3637,8 @@ var AbstractPage = /* @__PURE__ */ (() => {
 })();
 var PagePromise = /* @__PURE__ */ (() => {
   class PagePromise2 extends APIPromise {
-    constructor(client, request, Page2) {
-      super(client, request, async (client2, props) => new Page2(client2, props.response, await defaultParseResponse(client2, props), props.options));
+    constructor(client2, request, Page2) {
+      super(client2, request, async (client3, props) => new Page2(client3, props.response, await defaultParseResponse(client3, props), props.options));
     }
     /**
      * Allow auto-paginating iteration on an unawaited list call, eg:
@@ -3656,8 +3657,8 @@ var PagePromise = /* @__PURE__ */ (() => {
   return PagePromise2;
 })();
 var Page = class extends AbstractPage {
-  constructor(client, response, body, options) {
-    super(client, response, body, options);
+  constructor(client2, response, body, options) {
+    super(client2, response, body, options);
     this.data = body.data || [];
     this.has_more = body.has_more || false;
     this.first_id = body.first_id || null;
@@ -3700,8 +3701,8 @@ var Page = class extends AbstractPage {
   }
 };
 var PageCursor = class extends AbstractPage {
-  constructor(client, response, body, options) {
-    super(client, response, body, options);
+  constructor(client2, response, body, options) {
+    super(client2, response, body, options);
     this.data = body.data || [];
     this.next_page = body.next_page || null;
   }
@@ -3723,8 +3724,8 @@ var PageCursor = class extends AbstractPage {
   }
 };
 var BidirectionalPageCursor = class extends AbstractPage {
-  constructor(client, response, body, options) {
-    super(client, response, body, options);
+  constructor(client2, response, body, options) {
+    super(client2, response, body, options);
     this.data = body.data || [];
     this.next_page = body.next_page || null;
     this.prev_page = body.prev_page || null;
@@ -3886,8 +3887,8 @@ function propsForError(value) {
 
 // node_modules/@anthropic-ai/sdk/core/resource.mjs
 var APIResource = class {
-  constructor(client) {
-    this._client = client;
+  constructor(client2) {
+    this._client = client2;
   }
 };
 
@@ -5063,11 +5064,11 @@ function applyJitter(ms) {
 
 // node_modules/@anthropic-ai/sdk/lib/helper-client.mjs
 init_error();
-function copyClientForHelper(client, { authToken, helper }) {
+function copyClientForHelper(client2, { authToken, helper }) {
   if (!authToken) {
     throw new AnthropicError(`copyClientForHelper: expected a non-empty authToken but received ${JSON.stringify(authToken)}`);
   }
-  const internal = client;
+  const internal = client2;
   const parentDefaults = internal._options.defaultHeaders;
   const parentAuthExtraHeaders = internal._authState?.extraHeaders;
   const inheritedAuthExtraHeaders = parentAuthExtraHeaders ? Object.fromEntries(Object.entries(parentAuthExtraHeaders).filter(([name]) => {
@@ -5079,10 +5080,10 @@ function copyClientForHelper(client, { authToken, helper }) {
     parentDefaults,
     { [STAINLESS_HELPER_HEADER]: helper }
   ]);
-  return client.withOptions({
+  return client2.withOptions({
     apiKey: null,
     authToken,
-    baseURL: client.baseURL,
+    baseURL: client2.baseURL,
     credentials: void 0,
     defaultHeaders
   });
@@ -6217,9 +6218,9 @@ async function withTimeout(p, ms) {
       clearTimeout(timer);
   }
 }
-async function forceStop(client, work, log, requestOptions) {
+async function forceStop(client2, work, log, requestOptions) {
   try {
-    await client.beta.environments.work.stop(
+    await client2.beta.environments.work.stop(
       work.id,
       { environment_id: work.environment_id, force: true },
       // Caller's headers pass through; the helper-tag header is on the scoped
@@ -6264,7 +6265,7 @@ function serverLeaseState(e) {
   }
   return isObj(node) ? node : {};
 }
-async function heartbeatLoop(client, work, lease, logger, requestOptions, onLeaseTtl) {
+async function heartbeatLoop(client2, work, lease, logger, requestOptions, onLeaseTtl) {
   let intervalMs = HEARTBEAT_DEFAULT_MS;
   let ttlMs = HEARTBEAT_TTL_DEFAULT_MS;
   let lastSuccessMs = Date.now();
@@ -6274,7 +6275,7 @@ async function heartbeatLoop(client, work, lease, logger, requestOptions, onLeas
     const detach = linkAbort(lease.signal, beatCtrl);
     const cutoff = setTimeout(() => beatCtrl.abort(), intervalMs);
     try {
-      const resp = await client.beta.environments.work.heartbeat(work.id, { environment_id: work.environment_id, expected_last_heartbeat: last }, { ...requestOptions, headers: buildHeaders([requestOptions?.headers]), signal: beatCtrl.signal });
+      const resp = await client2.beta.environments.work.heartbeat(work.id, { environment_id: work.environment_id, expected_last_heartbeat: last }, { ...requestOptions, headers: buildHeaders([requestOptions?.headers]), signal: beatCtrl.signal });
       lastSuccessMs = Date.now();
       last = resp.last_heartbeat;
       if (resp.ttl_seconds > 0) {
@@ -8417,9 +8418,9 @@ var _BetaToolRunner_flushPendingToolChanges;
 var _BetaToolRunner_pendingToolChangesMessage;
 var BetaToolRunner = /* @__PURE__ */ (() => {
   class BetaToolRunner2 {
-    constructor(client, params, options) {
+    constructor(client2, params, options) {
       _BetaToolRunner_instances.add(this);
-      this.client = client;
+      this.client = client2;
       _BetaToolRunner_consumed.set(this, false);
       _BetaToolRunner_mutated.set(this, false);
       _BetaToolRunner_state.set(this, void 0);
@@ -14379,6 +14380,12 @@ var Anthropic = /* @__PURE__ */ (() => {
 var VOICE_FIELDS = ["voice_jargon", "voice_banned", "voice_rules", "voice_samples"];
 var SYNC_ITEM_LIMIT = chrome.storage.sync.QUOTA_BYTES_PER_ITEM;
 var DEFAULT_MODEL = "claude-opus-5";
+var FALLBACK_MODEL_LIST = [
+  { id: "claude-opus-5", name: "Claude Opus 5" },
+  { id: "claude-opus-5-5", name: "Claude Opus 5.5" },
+  { id: "claude-sonnet-5", name: "Claude Sonnet 5" },
+  { id: "claude-haiku-4-5", name: "Claude Haiku 4.5" }
+];
 async function getSettings() {
   const stored = await chrome.storage.sync.get(["apiKey", "model", ...VOICE_FIELDS]);
   return {
@@ -14389,30 +14396,47 @@ async function getSettings() {
 }
 
 // src/claude.js
-var FALLBACK_MODELS = /* @__PURE__ */ new Set(["claude-opus-5", "claude-opus-5-5", "claude-fable-5-1"]);
+var FALLBACK_MODELS = /* @__PURE__ */ new Set(["claude-opus-5", "claude-fable-5-1"]);
+var NO_EFFORT_MODELS = /^claude-haiku-4-5/;
+function client(apiKey) {
+  return new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
+}
+async function listModels() {
+  const { apiKey } = await getSettings();
+  if (!apiKey) return FALLBACK_MODEL_LIST;
+  try {
+    const models = [];
+    for await (const m of client(apiKey).models.list()) models.push({ id: m.id, name: m.display_name });
+    return models.length ? models : FALLBACK_MODEL_LIST;
+  } catch {
+    return FALLBACK_MODEL_LIST;
+  }
+}
 async function writePost(template, draft) {
   const { apiKey, model, voice } = await getSettings();
-  if (!apiKey) throw new Error("Add your Anthropic API key in the xwriter side panel (Settings).");
-  const client = new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
+  if (!apiKey) throw new Error("\u05D7\u05E1\u05E8 \u05DE\u05E4\u05EA\u05D7. \u05D4\u05DB\u05E0\u05E1 \u05D0\u05D5\u05EA\u05D5 \u05D1\u05D7\u05DC\u05D5\u05E0\u05D9\u05EA \u05D4\u05E6\u05D3, \u05D1\u05DC\u05E9\u05D5\u05E0\u05D9\u05EA \u05D4\u05D2\u05D3\u05E8\u05D5\u05EA.");
   const params = {
     model,
     max_tokens: 16e3,
-    output_config: { effort: "medium" },
+    ...NO_EFFORT_MODELS.test(model) ? {} : { output_config: { effort: "medium" } },
     system: [{ type: "text", text: buildSystemPrompt(voice), cache_control: { type: "ephemeral" } }],
     messages: [{ role: "user", content: buildUserMessage(template, draft) }]
   };
   let response;
   try {
-    response = FALLBACK_MODELS.has(model) ? await client.beta.messages.create({ ...params, betas: ["server-side-fallback-2026-07-01"], fallbacks: "default" }) : await client.messages.create(params);
+    response = FALLBACK_MODELS.has(model) ? await client(apiKey).beta.messages.create({ ...params, betas: ["server-side-fallback-2026-07-01"], fallbacks: "default" }) : await client(apiKey).messages.create(params);
   } catch (error) {
-    if (error instanceof Anthropic.AuthenticationError) throw new Error("Your Anthropic API key was rejected. Check it in Settings.");
-    if (error instanceof Anthropic.RateLimitError) throw new Error("Rate limited by Anthropic - try again in a moment.");
-    if (error instanceof Anthropic.APIError) throw new Error(`Anthropic API error ${error.status}: ${error.message}`);
+    if (error instanceof Anthropic.NotFoundError) throw new Error("\u05D4\u05DE\u05D5\u05D3\u05DC \u05E9\u05E0\u05D1\u05D7\u05E8 \u05DC\u05D0 \u05E7\u05D9\u05D9\u05DD. \u05D1\u05D7\u05E8 \u05DE\u05D5\u05D3\u05DC \u05DE\u05D4\u05E8\u05E9\u05D9\u05DE\u05D4 \u05D1\u05DC\u05E9\u05D5\u05E0\u05D9\u05EA \u05D4\u05D2\u05D3\u05E8\u05D5\u05EA.");
+    if (error instanceof Anthropic.AuthenticationError) throw new Error("\u05D4\u05DE\u05E4\u05EA\u05D7 \u05DC\u05D0 \u05D4\u05EA\u05E7\u05D1\u05DC. \u05D1\u05D3\u05D5\u05E7 \u05D0\u05D5\u05EA\u05D5 \u05D1\u05DC\u05E9\u05D5\u05E0\u05D9\u05EA \u05D4\u05D2\u05D3\u05E8\u05D5\u05EA.");
+    if (error instanceof Anthropic.PermissionDeniedError) throw new Error("\u05DC\u05DE\u05E4\u05EA\u05D7 \u05D0\u05D9\u05DF \u05D4\u05E8\u05E9\u05D0\u05D4 \u05DC\u05DE\u05D5\u05D3\u05DC \u05D4\u05D6\u05D4. \u05D1\u05D7\u05E8 \u05DE\u05D5\u05D3\u05DC \u05D0\u05D7\u05E8 \u05D1\u05D4\u05D2\u05D3\u05E8\u05D5\u05EA.");
+    if (error instanceof Anthropic.RateLimitError) throw new Error("\u05D9\u05D5\u05EA\u05E8 \u05DE\u05D3\u05D9 \u05D1\u05E7\u05E9\u05D5\u05EA. \u05E0\u05E1\u05D4 \u05E9\u05D5\u05D1 \u05E2\u05D5\u05D3 \u05E8\u05D2\u05E2.");
+    if (error instanceof Anthropic.APIConnectionError) throw new Error("\u05D0\u05D9\u05DF \u05D7\u05D9\u05D1\u05D5\u05E8 \u05DC\u05D0\u05E0\u05EA\u05E8\u05D5\u05E4\u05D9\u05E7. \u05D1\u05D3\u05D5\u05E7 \u05D0\u05EA \u05D4\u05D0\u05D9\u05E0\u05D8\u05E8\u05E0\u05D8 \u05D5\u05E0\u05E1\u05D4 \u05E9\u05D5\u05D1.");
+    if (error instanceof Anthropic.APIError) throw new Error(`\u05E9\u05D2\u05D9\u05D0\u05D4 \u05DE\u05D0\u05E0\u05EA\u05E8\u05D5\u05E4\u05D9\u05E7 (${error.status}): ${error.message}`);
     throw error;
   }
-  if (response.stop_reason === "refusal") throw new Error("Claude declined this request.");
+  if (response.stop_reason === "refusal") throw new Error("\u05E7\u05DC\u05D5\u05D3 \u05E1\u05D9\u05E8\u05D1 \u05DC\u05D1\u05E7\u05E9\u05D4 \u05D4\u05D6\u05D5.");
   const text = response.content.filter((b) => b.type === "text").map((b) => b.text).join("");
-  if (!text.trim()) throw new Error("Claude returned an empty response.");
+  if (!text.trim()) throw new Error("\u05E7\u05DC\u05D5\u05D3 \u05D4\u05D7\u05D6\u05D9\u05E8 \u05EA\u05E9\u05D5\u05D1\u05D4 \u05E8\u05D9\u05E7\u05D4. \u05E0\u05E1\u05D4 \u05E9\u05D5\u05D1.");
   const post = enforceHardRules(text);
   return { post, banned: findBannedWords(post, voice) };
 }
@@ -14443,7 +14467,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   const template = templates_default.find((t) => `tpl:${t.id}` === info.menuItemId);
   const captured = await sendToTab(tab.id, { type: "xw:capture" });
   const draft = captured?.text || info.selectionText;
-  await sendToTab(tab.id, { type: "xw:toast", text: `Writing - ${template.name}...` });
+  await sendToTab(tab.id, { type: "xw:toast", text: `\u05DB\u05D5\u05EA\u05D1: ${template.nameHe}...` });
   try {
     const { post, banned } = await writePost(template, draft);
     await sendToTab(tab.id, { type: "xw:insert", text: post, banned });
@@ -14457,6 +14481,10 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     writePost(template, message.draft).then((result) => sendResponse({ ok: true, ...result })).catch((error) => sendResponse({ ok: false, error: error.message }));
     return true;
   }
+  if (message.type === "xw:models") {
+    listModels().then(sendResponse);
+    return true;
+  }
   if (message.type === "xw:templates") {
     sendResponse(templates_default);
   }
@@ -14465,7 +14493,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       try {
         sendResponse(await sendToTab(tab.id, { type: "xw:insertComposer", text: message.text }));
       } catch {
-        sendResponse({ ok: false, error: "Open x.com in the active tab first." });
+        sendResponse({ ok: false, error: "\u05E4\u05EA\u05D7 \u05D0\u05EA \u05D0\u05D9\u05E7\u05E1 \u05D1\u05DC\u05E9\u05D5\u05E0\u05D9\u05EA \u05D4\u05E4\u05E2\u05D9\u05DC\u05D4 \u05E7\u05D5\u05D3\u05DD." });
       }
     });
     return true;

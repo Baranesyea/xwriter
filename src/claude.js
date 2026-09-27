@@ -1,19 +1,37 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { getSettings } from "./settings.js";
+import { getSettings, FALLBACK_MODEL_LIST } from "./settings.js";
 import { buildSystemPrompt, buildUserMessage, enforceHardRules, findBannedWords } from "./prompt.js";
 
 // Server-side refusal fallbacks are supported on these models.
-const FALLBACK_MODELS = new Set(["claude-opus-5", "claude-opus-5-5", "claude-fable-5-1"]);
+const FALLBACK_MODELS = new Set(["claude-opus-5", "claude-fable-5-1"]);
+// Haiku 4.5 rejects the effort setting.
+const NO_EFFORT_MODELS = /^claude-haiku-4-5/;
+
+function client(apiKey) {
+  return new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
+}
+
+// Live list of models this API key can use, for the settings menu.
+export async function listModels() {
+  const { apiKey } = await getSettings();
+  if (!apiKey) return FALLBACK_MODEL_LIST;
+  try {
+    const models = [];
+    for await (const m of client(apiKey).models.list()) models.push({ id: m.id, name: m.display_name });
+    return models.length ? models : FALLBACK_MODEL_LIST;
+  } catch {
+    return FALLBACK_MODEL_LIST;
+  }
+}
 
 export async function writePost(template, draft) {
   const { apiKey, model, voice } = await getSettings();
-  if (!apiKey) throw new Error("Add your Anthropic API key in the xwriter side panel (Settings).");
+  if (!apiKey) throw new Error("חסר מפתח. הכנס אותו בחלונית הצד, בלשונית הגדרות.");
 
-  const client = new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
   const params = {
     model,
     max_tokens: 16000,
-    output_config: { effort: "medium" },
+    ...(NO_EFFORT_MODELS.test(model) ? {} : { output_config: { effort: "medium" } }),
     system: [{ type: "text", text: buildSystemPrompt(voice), cache_control: { type: "ephemeral" } }],
     messages: [{ role: "user", content: buildUserMessage(template, draft) }],
   };
@@ -21,21 +39,24 @@ export async function writePost(template, draft) {
   let response;
   try {
     response = FALLBACK_MODELS.has(model)
-      ? await client.beta.messages.create({ ...params, betas: ["server-side-fallback-2026-07-01"], fallbacks: "default" })
-      : await client.messages.create(params);
+      ? await client(apiKey).beta.messages.create({ ...params, betas: ["server-side-fallback-2026-07-01"], fallbacks: "default" })
+      : await client(apiKey).messages.create(params);
   } catch (error) {
-    if (error instanceof Anthropic.AuthenticationError) throw new Error("Your Anthropic API key was rejected. Check it in Settings.");
-    if (error instanceof Anthropic.RateLimitError) throw new Error("Rate limited by Anthropic - try again in a moment.");
-    if (error instanceof Anthropic.APIError) throw new Error(`Anthropic API error ${error.status}: ${error.message}`);
+    if (error instanceof Anthropic.NotFoundError) throw new Error("המודל שנבחר לא קיים. בחר מודל מהרשימה בלשונית הגדרות.");
+    if (error instanceof Anthropic.AuthenticationError) throw new Error("המפתח לא התקבל. בדוק אותו בלשונית הגדרות.");
+    if (error instanceof Anthropic.PermissionDeniedError) throw new Error("למפתח אין הרשאה למודל הזה. בחר מודל אחר בהגדרות.");
+    if (error instanceof Anthropic.RateLimitError) throw new Error("יותר מדי בקשות. נסה שוב עוד רגע.");
+    if (error instanceof Anthropic.APIConnectionError) throw new Error("אין חיבור לאנתרופיק. בדוק את האינטרנט ונסה שוב.");
+    if (error instanceof Anthropic.APIError) throw new Error(`שגיאה מאנתרופיק (${error.status}): ${error.message}`);
     throw error;
   }
 
-  if (response.stop_reason === "refusal") throw new Error("Claude declined this request.");
+  if (response.stop_reason === "refusal") throw new Error("קלוד סירב לבקשה הזו.");
   const text = response.content
     .filter((b) => b.type === "text")
     .map((b) => b.text)
     .join("");
-  if (!text.trim()) throw new Error("Claude returned an empty response.");
+  if (!text.trim()) throw new Error("קלוד החזיר תשובה ריקה. נסה שוב.");
 
   const post = enforceHardRules(text);
   return { post, banned: findBannedWords(post, voice) };

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "xwriter",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Turn Hebrew drafts into ready-to-post English X posts in your own voice.",
   "permissions": ["contextMenus", "storage", "sidePanel", "scripting", "activeTab", "clipboardWrite"],
   "host_permissions": ["https://x.com/*", "https://twitter.com/*", "https://api.anthropic.com/*"],

@@ -1,5 +1,5 @@
 import { templates } from "./prompt.js";
-import { writePost } from "./claude.js";
+import { writePost, listModels } from "./claude.js";
 
 const PARENT_ID = "xwriter";
 
@@ -33,7 +33,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   // Read the selection from the page: info.selectionText drops line breaks.
   const captured = await sendToTab(tab.id, { type: "xw:capture" });
   const draft = captured?.text || info.selectionText;
-  await sendToTab(tab.id, { type: "xw:toast", text: `Writing - ${template.name}...` });
+  await sendToTab(tab.id, { type: "xw:toast", text: `כותב: ${template.nameHe}...` });
 
   try {
     const { post, banned } = await writePost(template, draft);
@@ -52,6 +52,10 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       .catch((error) => sendResponse({ ok: false, error: error.message }));
     return true;
   }
+  if (message.type === "xw:models") {
+    listModels().then(sendResponse);
+    return true;
+  }
   if (message.type === "xw:templates") {
     sendResponse(templates);
   }
@@ -60,7 +64,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       try {
         sendResponse(await sendToTab(tab.id, { type: "xw:insertComposer", text: message.text }));
       } catch {
-        sendResponse({ ok: false, error: "Open x.com in the active tab first." });
+        sendResponse({ ok: false, error: "פתח את איקס בלשונית הפעילה קודם." });
       }
     });
     return true;

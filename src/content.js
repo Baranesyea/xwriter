@@ -58,7 +58,7 @@
 
   function insertIntoComposer(text) {
     const el = composer();
-    if (!el) return { ok: false, error: "Open the post composer on X first." };
+    if (!el) return { ok: false, error: "פתח קודם את שדה כתיבת הפוסט באיקס." };
     el.focus();
     const sel = window.getSelection();
     if (!sel.rangeCount || !el.contains(sel.anchorNode)) {
@@ -77,6 +77,7 @@
     toastEl?.remove();
     toastEl = document.createElement("div");
     toastEl.textContent = text;
+    toastEl.dir = "rtl";
     Object.assign(toastEl.style, {
       position: "fixed", bottom: "24px", left: "50%", transform: "translateX(-50%)",
       zIndex: 2147483647, padding: "10px 16px", borderRadius: "10px", maxWidth: "80vw",
@@ -96,13 +97,13 @@
       sendResponse({});
     } else if (message.type === "xw:insert") {
       if (insert(message.text)) {
-        toast(message.banned?.length ? `Done - check these words: ${message.banned.join(", ")}` : "Done", {
+        toast(message.banned?.length ? `מוכן. כדאי לבדוק את המילים: ${message.banned.join(", ")}` : "מוכן", {
           error: Boolean(message.banned?.length),
         });
       } else {
         navigator.clipboard.writeText(message.text).then(
-          () => toast("Copied to clipboard - the selection was not in a text field."),
-          () => toast("Could not insert or copy - open the xwriter panel to see the post.", { error: true }),
+          () => toast("הטקסט המסומן לא היה בשדה כתיבה, אז העתקתי את הפוסט ללוח."),
+          () => toast("לא הצלחתי להכניס או להעתיק. נסה דרך חלונית הצד.", { error: true }),
         );
       }
       sendResponse({});

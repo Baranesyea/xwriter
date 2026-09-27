@@ -65,8 +65,21 @@ $("copy").addEventListener("click", async () => {
 getSettings().then(({ apiKey, model, voice }) => {
   for (const k of VOICE_FIELDS) $(k).value = voice[k];
   $("apiKey").value = apiKey;
-  $("model").value = model;
+  loadModels(model);
 });
+
+function loadModels(selected) {
+  chrome.runtime.sendMessage({ type: "xw:models" }, (models) => {
+    $("model").innerHTML = models.map((m) => `<option value="${m.id}">${m.name}</option>`).join("");
+    if (models.some((m) => m.id === selected)) {
+      $("model").value = selected;
+    } else {
+      // A saved model that no longer exists (e.g. a typo) is replaced by the default.
+      $("model").value = DEFAULT_MODEL;
+      chrome.storage.sync.set({ model: DEFAULT_MODEL });
+    }
+  });
+}
 
 let saveTimer;
 document.querySelectorAll("[data-voice]").forEach((el) =>
@@ -87,6 +100,7 @@ document.querySelectorAll("[data-voice]").forEach((el) =>
 
 // Settings tab
 $("save-settings").addEventListener("click", async () => {
-  await chrome.storage.sync.set({ apiKey: $("apiKey").value.trim(), model: $("model").value.trim() || DEFAULT_MODEL });
+  await chrome.storage.sync.set({ apiKey: $("apiKey").value.trim(), model: $("model").value || DEFAULT_MODEL });
   setStatus("settings-status", "נשמר.");
+  loadModels($("model").value);
 });

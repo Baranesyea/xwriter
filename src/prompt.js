@@ -20,6 +20,7 @@ export function buildSystemPrompt(voice) {
 
   return [
     "You write X (Twitter) posts for one founder. He drafts in Hebrew (sometimes mixed with English); you turn the draft into a ready-to-post English post in his voice.",
+    "Always write the post in English. Never answer in Hebrew, even though the draft and these instructions may be in Hebrew.",
     "Return only the final post text - no preamble, no quotes around it, no notes, no hashtags unless the draft has them.",
     "Keep his meaning and his facts. Never invent numbers, customers, or claims that are not in the draft.",
     "# Voice profile\n" + defaultVoice,

@@ -49,7 +49,7 @@
     }
     function insertIntoComposer(text) {
       const el = composer();
-      if (!el) return { ok: false, error: "Open the post composer on X first." };
+      if (!el) return { ok: false, error: "\u05E4\u05EA\u05D7 \u05E7\u05D5\u05D3\u05DD \u05D0\u05EA \u05E9\u05D3\u05D4 \u05DB\u05EA\u05D9\u05D1\u05EA \u05D4\u05E4\u05D5\u05E1\u05D8 \u05D1\u05D0\u05D9\u05E7\u05E1." };
       el.focus();
       const sel = window.getSelection();
       if (!sel.rangeCount || !el.contains(sel.anchorNode)) {
@@ -67,6 +67,7 @@
       toastEl?.remove();
       toastEl = document.createElement("div");
       toastEl.textContent = text;
+      toastEl.dir = "rtl";
       Object.assign(toastEl.style, {
         position: "fixed",
         bottom: "24px",
@@ -94,13 +95,13 @@
         sendResponse({});
       } else if (message.type === "xw:insert") {
         if (insert(message.text)) {
-          toast(message.banned?.length ? `Done - check these words: ${message.banned.join(", ")}` : "Done", {
+          toast(message.banned?.length ? `\u05DE\u05D5\u05DB\u05DF. \u05DB\u05D3\u05D0\u05D9 \u05DC\u05D1\u05D3\u05D5\u05E7 \u05D0\u05EA \u05D4\u05DE\u05D9\u05DC\u05D9\u05DD: ${message.banned.join(", ")}` : "\u05DE\u05D5\u05DB\u05DF", {
             error: Boolean(message.banned?.length)
           });
         } else {
           navigator.clipboard.writeText(message.text).then(
-            () => toast("Copied to clipboard - the selection was not in a text field."),
-            () => toast("Could not insert or copy - open the xwriter panel to see the post.", { error: true })
+            () => toast("\u05D4\u05D8\u05E7\u05E1\u05D8 \u05D4\u05DE\u05E1\u05D5\u05DE\u05DF \u05DC\u05D0 \u05D4\u05D9\u05D4 \u05D1\u05E9\u05D3\u05D4 \u05DB\u05EA\u05D9\u05D1\u05D4, \u05D0\u05D6 \u05D4\u05E2\u05EA\u05E7\u05EA\u05D9 \u05D0\u05EA \u05D4\u05E4\u05D5\u05E1\u05D8 \u05DC\u05DC\u05D5\u05D7."),
+            () => toast("\u05DC\u05D0 \u05D4\u05E6\u05DC\u05D7\u05EA\u05D9 \u05DC\u05D4\u05DB\u05E0\u05D9\u05E1 \u05D0\u05D5 \u05DC\u05D4\u05E2\u05EA\u05D9\u05E7. \u05E0\u05E1\u05D4 \u05D3\u05E8\u05DA \u05D7\u05DC\u05D5\u05E0\u05D9\u05EA \u05D4\u05E6\u05D3.", { error: true })
           );
         }
         sendResponse({});
