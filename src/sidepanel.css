@@ -1,0 +1,19 @@
+:root { --bg: #fff; --fg: #0f1419; --muted: #536471; --line: #cfd9de; --accent: #1d9bf0; --err: #c0392b; }
+@media (prefers-color-scheme: dark) { :root { --bg: #15202b; --fg: #e7e9ea; --muted: #8b98a5; --line: #38444d; } }
+* { box-sizing: border-box; }
+body { margin: 0; padding: 12px; background: var(--bg); color: var(--fg); font: 14px/1.5 system-ui, sans-serif; }
+nav { display: flex; gap: 4px; margin-bottom: 12px; border-bottom: 1px solid var(--line); }
+nav button { background: none; border: 0; border-bottom: 2px solid transparent; color: var(--muted); padding: 8px 10px; cursor: pointer; font: inherit; }
+nav button.active { color: var(--fg); border-color: var(--accent); font-weight: 600; }
+.tab { display: none; flex-direction: column; gap: 6px; }
+.tab.active { display: flex; }
+label { font-weight: 600; margin-top: 6px; }
+textarea, input, select { width: 100%; padding: 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--fg); font: inherit; }
+textarea { resize: vertical; }
+button { padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); cursor: pointer; font: inherit; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+button:disabled { opacity: .6; cursor: wait; }
+.row { display: flex; gap: 8px; }
+.hint { color: var(--muted); font-size: 12px; margin: 0; }
+.status { min-height: 1.5em; margin: 4px 0 0; color: var(--muted); }
+.status.error { color: var(--err); }

@@ -1,0 +1,82 @@
+[
+  {
+    "id": "faithful-translation",
+    "name": "Faithful translation",
+    "nameHe": "תרגום נאמן",
+    "whenToUse": "When the draft already says what you want and you just need it in natural, X-ready English.",
+    "instructions": "Translate the draft into natural English in the founder's voice. Keep the meaning, the order of ideas, the structure and the length as close to the original as possible. Do not add a hook, a question, new points or new facts, and do not cut points. Only fix what a native English-speaking founder would say differently: Hebrew word order, literal idioms, and anything that breaks the voice rules. Keep line breaks where the draft has them. If the result is over 280 characters, that is fine.",
+    "example": "Spent the whole week on one thing: making the agent in WoW answer chat questions during a simulive webinar without sounding like a bot.\n\nStill not perfect. But people in the chat stopped asking if they're talking to a human.\n\nThat's a good sign."
+  },
+  {
+    "id": "one-liner",
+    "name": "Punchy one-liner",
+    "nameHe": "משפט אחד חד",
+    "whenToUse": "When the draft has one sharp idea that can stand alone in a sentence or two.",
+    "instructions": "Find the single sharpest idea in the draft and write it as one or two short lines, under 200 characters. No setup, no explanation, no question at the end, no hashtags. It should read like something a founder would say out loud across the table. Plain words, a clear point of view. Offer the strongest version only.",
+    "example": "A webinar that only runs when you're free to host it is not a system. It's a job."
+  },
+  {
+    "id": "build-in-public",
+    "name": "Build in public update",
+    "nameHe": "עדכון בונים בפומבי",
+    "whenToUse": "When sharing progress on WoW: what shipped, what broke, a number, or a decision you made this week.",
+    "instructions": "Open with the most concrete thing in the draft (a number, a shipped feature, a hard call) in the first line. Then 3-6 short lines on what happened, what you learned or what's next. Use a simple list with '-' if there are several items. Use only numbers and facts from the draft; never invent metrics. Be honest about what didn't work. End with one specific question to other builders, or with what comes next. 300-700 characters.",
+    "example": "WoW update, week 14:\n\n- Agent now runs the full simulive webinar: intro, chat, Q&A, offer\n- Chat answers are down from 40 sec to 6 sec\n- Broke the replay page twice. Fixed it twice.\n\nNext: letting the agent follow up by email with people who left early.\n\nFounders running webinars - what do you do with people who drop off halfway?"
+  },
+  {
+    "id": "lesson-insight",
+    "name": "Lesson learned",
+    "nameHe": "תובנה / לקח",
+    "whenToUse": "When the draft is about something you learned the hard way while building or selling.",
+    "instructions": "First line: the lesson itself, stated plainly as a claim, or the mistake that taught it. Then 2-4 short lines of the real context from the draft (what happened, what you saw). Then one line on what you do differently now. Keep it specific to the founder's experience, not general advice. No moral at the end that repeats the first line. 280-700 characters.",
+    "example": "The best webinar we ran this month had no live host.\n\nIt was a simulive session. The agent handled the chat, answered questions and sent the offer at the right moment.\n\nI used to think live meant better.\n\nNow I think prepared means better. Live was just me being nervous in real time."
+  },
+  {
+    "id": "contrarian-take",
+    "name": "Contrarian take",
+    "nameHe": "דעה נגד הזרם",
+    "whenToUse": "When the draft pushes back on something most founders or marketers believe.",
+    "instructions": "Line 1: the common belief, short. Line 2: your opposite view, stated plainly and with confidence. Then 2-4 short lines with the real reason, from your own experience in the draft. Be firm about the idea, never mean about people. No 'Unpopular opinion:' or 'Hot take:' openers. End with the clearest one-line version of your view or a direct question inviting founders to disagree. 250-600 characters.",
+    "example": "Everyone says webinars have to be live to convert.\n\nI don't buy it.\n\nPeople don't leave because the host isn't live. They leave because nobody answers them.\n\nA simulive webinar with fast, real answers in the chat beats a live one with a host who can't keep up.\n\nChange my mind."
+  },
+  {
+    "id": "story",
+    "name": "Short story",
+    "nameHe": "סיפור קצר",
+    "whenToUse": "When the draft describes a moment: a customer call, a failure, a turning point while building WoW.",
+    "instructions": "Open in the middle of the moment (a time, a place, a line someone said), not with background. Tell it in short lines, in order, with one detail that makes it feel real. Build to the turn: what changed or what you realized. End with a one-line takeaway that other founders can use. Keep only details from the draft. Up to ~1,200 characters; cut anything that doesn't move the story.",
+    "example": "2am. A customer messaged me: \"Your agent just sold 9 seats while I was asleep.\"\n\nThat webinar was a simulive session he set up once and forgot about.\n\nThe agent ran it, answered 30+ questions in chat, and pushed the offer when people were ready.\n\nThat was the night I stopped calling WoW a webinar tool.\n\nIt's a teammate that works the night shift."
+  },
+  {
+    "id": "list-post",
+    "name": "List post",
+    "nameHe": "פוסט רשימה",
+    "whenToUse": "When the draft has several tips, steps, mistakes or tools that fit a numbered list.",
+    "instructions": "First line: a clear promise with the count, for example 'X things I learned from...' or 'How we...:'. Then a numbered list of 3-7 items, each one line, concrete and useful on its own. Keep items parallel in form. Optional last line: one short takeaway or a question. Only include items that are in the draft. 300-900 characters.",
+    "example": "5 things I learned running 100+ simulive webinars with an agent:\n\n1. The first 90 seconds decide who stays\n2. Fast chat answers matter more than a live face\n3. People ask the same 12 questions every time\n4. The offer works best after the third question, not at the end\n5. Replays sell more than we ever expected\n\nNumber 4 surprised me the most."
+  },
+  {
+    "id": "thread",
+    "name": "Thread",
+    "nameHe": "שרשור",
+    "whenToUse": "When the draft has enough depth for a step-by-step breakdown, a full story, or several connected lessons.",
+    "instructions": "Write a thread of 4-8 posts, each under 280 characters, numbered '1/', '2/' and so on, separated by a blank line and a line with '---'. Post 1 is a strong hook that says what the reader will get. Each middle post covers one point and makes the reader want the next one. The last post sums up the main takeaway in one line and asks other founders a specific question. No links except, if the draft has one, in the last post. Use only content from the draft.",
+    "example": "1/ We built an agent that runs a full webinar on its own.\n\nNo host. No live stress. Here's how WoW runs a simulive webinar end to end:\n\n---\n\n2/ It starts before the webinar.\n\nThe agent sends reminders and checks who actually plans to show up.\n\n---\n\n3/ During the session, the video plays like it's live.\n\nThe agent reads the chat and answers every question in seconds.\n\n---\n\n4/ When enough people ask about price, it drops the offer.\n\nNot at minute 60. When the room is ready.\n\n---\n\n5/ After, it follows up with everyone based on what they did and asked.\n\n---\n\n6/ Biggest lesson: the video was never the hard part. The conversation around it was.\n\nWhat part of your webinars would you hand to an agent first?"
+  },
+  {
+    "id": "question-to-founders",
+    "name": "Question to founders",
+    "nameHe": "שאלה ליזמים",
+    "whenToUse": "When you want replies and real conversation, around a problem you're facing right now.",
+    "instructions": "Share the real situation from the draft in 1-3 short lines, so people have enough context to give a useful answer. Then ask one specific, open question that other founders can answer from their own experience. Avoid yes/no questions and vague ones like 'Thoughts?'. Optionally share your current leaning so people can push back. 150-450 characters.",
+    "example": "We're deciding how much control to give the agent in WoW during a live chat.\n\nRight now it answers anything about the product, but hands off pricing questions to a human.\n\nFounders building with agents - where do you draw the line between what the agent decides and what a person decides?"
+  },
+  {
+    "id": "before-after",
+    "name": "Before / after",
+    "nameHe": "לפני / אחרי",
+    "whenToUse": "When the draft shows a clear change: how things worked before and how they work now.",
+    "instructions": "Open with a one-line hook about the change. Then a 'Before:' block and an 'After:' block, each with 2-4 short lines or '-' items, using only facts from the draft. End with one line on what made the difference. Keep both blocks parallel so the contrast is easy to see. 300-700 characters.",
+    "example": "What running webinars looked like for me, then and now:\n\nBefore:\n- Block 2 hours, 3 times a week\n- Answer chat while trying to present\n- Miss half the questions\n\nAfter:\n- Set it up once, run it simulive with WoW\n- Agent answers every question in chat\n- I read the summary with my coffee\n\nThe difference wasn't the video. It was not being the bottleneck."
+  }
+]

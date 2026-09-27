@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <title>xwriter</title>
+  <link rel="stylesheet" href="sidepanel.css">
+</head>
+<body>
+  <nav>
+    <button data-tab="write" class="active">כתיבה</button>
+    <button data-tab="voice">הקול שלי</button>
+    <button data-tab="settings">הגדרות</button>
+  </nav>
+
+  <section id="write" class="tab active">
+    <label for="draft">הטיוטה שלך</label>
+    <textarea id="draft" dir="auto" rows="8" placeholder="כתוב כאן בעברית..."></textarea>
+    <label for="template">תבנית</label>
+    <select id="template"></select>
+    <p id="template-hint" class="hint"></p>
+    <button id="generate" class="primary">כתוב פוסט</button>
+    <div id="result-box" hidden>
+      <label for="result">הפוסט</label>
+      <textarea id="result" dir="ltr" rows="10"></textarea>
+      <p id="result-meta" class="hint"></p>
+      <div class="row">
+        <button id="insert" class="primary">הכנס לשדה באיקס</button>
+        <button id="copy">העתק</button>
+      </div>
+    </div>
+    <p id="write-status" class="status"></p>
+  </section>
+
+  <section id="voice" class="tab">
+    <p class="hint">הכללים הקבועים כבר בפנים. כאן מוסיפים עוד. נשמר אוטומטית ומסתנכרן עם הפרופיל שלך בכרום.</p>
+    <label for="voice_jargon">מילון ג׳רגון</label>
+    <textarea id="voice_jargon" data-voice dir="auto" rows="5"></textarea>
+    <label for="voice_banned">מילים אסורות (שורה לכל אחת)</label>
+    <textarea id="voice_banned" data-voice dir="auto" rows="5"></textarea>
+    <label for="voice_rules">כללי טון נוספים</label>
+    <textarea id="voice_rules" data-voice dir="auto" rows="5"></textarea>
+    <label for="voice_samples">דוגמאות כתיבה שלך</label>
+    <textarea id="voice_samples" data-voice dir="auto" rows="10"></textarea>
+    <p id="voice-status" class="status"></p>
+  </section>
+
+  <section id="settings" class="tab">
+    <label for="apiKey">מפתח ממשק של אנטרופיק</label>
+    <input id="apiKey" type="password" dir="ltr" autocomplete="off">
+    <label for="model">מודל</label>
+    <input id="model" dir="ltr">
+    <button id="save-settings" class="primary">שמור</button>
+    <p id="settings-status" class="status"></p>
+  </section>
+
+  <script src="sidepanel.js"></script>
+</body>
+</html>

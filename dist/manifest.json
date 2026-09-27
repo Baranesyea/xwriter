@@ -1,0 +1,18 @@
+{
+  "manifest_version": 3,
+  "name": "xwriter",
+  "version": "0.1.0",
+  "description": "Turn Hebrew drafts into ready-to-post English X posts in your own voice.",
+  "permissions": ["contextMenus", "storage", "sidePanel", "scripting", "activeTab", "clipboardWrite"],
+  "host_permissions": ["https://x.com/*", "https://twitter.com/*", "https://api.anthropic.com/*"],
+  "background": { "service_worker": "background.js", "type": "module" },
+  "content_scripts": [
+    {
+      "matches": ["https://x.com/*", "https://twitter.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "side_panel": { "default_path": "sidepanel.html" },
+  "action": { "default_title": "xwriter" }
+}

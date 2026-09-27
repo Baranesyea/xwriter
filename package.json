@@ -1,0 +1,16 @@
+{
+  "name": "xwriter",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Chrome extension that turns Hebrew drafts into ready-to-post English X posts in your voice",
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.128.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2"
+  }
+}
