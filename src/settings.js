@@ -15,10 +15,11 @@ export const FALLBACK_MODEL_LIST = [
 ];
 
 export async function getSettings() {
-  const stored = await chrome.storage.sync.get(["apiKey", "model", ...VOICE_FIELDS]);
+  const stored = await chrome.storage.sync.get(["apiKey", "model", "premium", ...VOICE_FIELDS]);
   return {
     apiKey: stored.apiKey || "",
     model: stored.model || DEFAULT_MODEL,
+    premium: Boolean(stored.premium),
     voice: Object.fromEntries(VOICE_FIELDS.map((k) => [k, stored[k] || ""])),
   };
 }

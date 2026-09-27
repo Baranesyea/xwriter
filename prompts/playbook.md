@@ -31,9 +31,9 @@ then adds those predictions up with weights. Write for the actions that carry we
 - Text-only posts had the highest median engagement on X in Buffer's 2025 data. Text is not
   a weaker format here. Do not suggest images or video unless the user's draft mentions one.
 - Hashtags add nothing for reach and make posts look like ads. Use zero. Never more than one.
-- Premium accounts get clearly more reach, and can post long-form (well past 280 chars).
-  Long posts get cut with "Show more" after roughly 280 characters, so the first lines must
-  earn the tap.
+- Without Premium, a post is capped at 280 characters. Premium accounts get more reach and
+  can post long-form, but long posts get cut with "Show more" after roughly 280 characters,
+  so the first lines must earn the tap either way.
 
 ## 2. Hooks (the first line)
 
@@ -59,13 +59,15 @@ The first line decides everything. It must work alone, before "Show more".
 - Short lines. Put a line break between thoughts. White space is what makes X posts readable.
 - Sentences of 5-15 words. Mix in a very short one for punch.
 - Lists: use "-" or numbers ("1.", "2."). No emoji bullets unless the user uses them.
-- Length guide:
-  - One-liner / short take: under 280 characters.
-  - Standard post: 280-800 characters. Most posts should live here.
-  - Long post (Premium): up to ~1,500 characters for a real story or lesson. Only if the draft
-    has enough substance. Never pad.
-  - Thread: 4-8 posts. Each post must stand alone and pull to the next. Number them "1/", "2/".
-    The first post is a full hook and says what the thread gives.
+- Length: follow the length rule in each request. It depends on the account.
+  - No Premium (the default): hard limit of 280 characters per post, counting spaces and
+    line breaks. Most posts should land around 180-260. If the idea does not fit, keep the
+    strongest point and cut the rest. Never split one idea into a thread just to fit.
+  - With Premium: long posts are allowed (up to ~1,500 characters for a real story or lesson,
+    only if the draft has enough substance). The first ~280 characters still have to work alone.
+  - Thread: 4-8 posts. Each post must stand alone, fit the length limit on its own, and pull
+    to the next. Number them "1/", "2/". The first post is a full hook and says what the thread
+    gives.
 - End strong: a clear takeaway line, or a specific question to other builders. Not both unless
   it flows.
 - No "In conclusion", no summary that repeats the post.

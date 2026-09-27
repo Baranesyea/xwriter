@@ -97,9 +97,10 @@
       sendResponse({});
     } else if (message.type === "xw:insert") {
       if (insert(message.text)) {
-        toast(message.banned?.length ? `מוכן. כדאי לבדוק את המילים: ${message.banned.join(", ")}` : "מוכן", {
-          error: Boolean(message.banned?.length),
-        });
+        const warnings = [];
+        if (message.over?.length) warnings.push(`עדיין ארוך מהמגבלה של ${message.limit} תווים. כדאי לקצר.`);
+        if (message.banned?.length) warnings.push(`כדאי לבדוק את המילים: ${message.banned.join(", ")}`);
+        toast(warnings.length ? `מוכן.\n${warnings.join("\n")}` : "מוכן", { error: warnings.length > 0 });
       } else {
         navigator.clipboard.writeText(message.text).then(
           () => toast("הטקסט המסומן לא היה בשדה כתיבה, אז העתקתי את הפוסט ללוח."),

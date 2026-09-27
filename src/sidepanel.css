@@ -14,6 +14,9 @@ button { padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line);
 button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
 button:disabled { opacity: .6; cursor: wait; }
 .row { display: flex; gap: 8px; }
+.check { display: flex; gap: 8px; align-items: center; font-weight: 600; }
+.check input { width: auto; }
 .hint { color: var(--muted); font-size: 12px; margin: 0; }
 .status { min-height: 1.5em; margin: 4px 0 0; color: var(--muted); }
 .status.error { color: var(--err); }
+.hint.error { color: var(--err); }

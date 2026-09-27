@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { getSettings, FALLBACK_MODEL_LIST } from "./settings.js";
+import { limitFor, overLimit } from "./xlength.js";
 import { buildSystemPrompt, buildUserMessage, enforceHardRules, findBannedWords } from "./prompt.js";
 
 // Server-side refusal fallbacks are supported on these models.
@@ -24,16 +25,50 @@ export async function listModels() {
   }
 }
 
+const MAX_SHORTEN_ROUNDS = 2;
+
 export async function writePost(template, draft) {
-  const { apiKey, model, voice } = await getSettings();
+  const { apiKey, model, premium, voice } = await getSettings();
   if (!apiKey) throw new Error("חסר מפתח. הכנס אותו בחלונית הצד, בלשונית הגדרות.");
 
+  const limit = limitFor(premium);
+  const messages = [{ role: "user", content: buildUserMessage(template, draft, limit, premium) }];
+  const system = [{ type: "text", text: buildSystemPrompt(voice), cache_control: { type: "ephemeral" } }];
+
+  let post = "";
+  let over = [];
+  for (let round = 0; round <= MAX_SHORTEN_ROUNDS; round++) {
+    const response = await callClaude(apiKey, model, system, messages);
+    const text = response.content
+      .filter((b) => b.type === "text")
+      .map((b) => b.text)
+      .join("");
+    if (!text.trim()) throw new Error("קלוד החזיר תשובה ריקה. נסה שוב.");
+
+    post = enforceHardRules(text);
+    over = overLimit(post, limit);
+    if (!over.length) break;
+
+    // Too long for X: ask Claude to shorten, keeping the conversation so it
+    // edits its own draft instead of starting over.
+    const details = over.map((p) => `post ${p.index} is ${p.length}`).join(", ");
+    messages.push({ role: "assistant", content: response.content });
+    messages.push({
+      role: "user",
+      content: `Too long for X: ${details} characters, and the limit is ${limit} per post. Rewrite it to fit, keeping the hook and the main point. Return only the post.`,
+    });
+  }
+
+  return { post, banned: findBannedWords(post, voice), limit, over };
+}
+
+async function callClaude(apiKey, model, system, messages) {
   const params = {
     model,
     max_tokens: 16000,
     ...(NO_EFFORT_MODELS.test(model) ? {} : { output_config: { effort: "medium" } }),
-    system: [{ type: "text", text: buildSystemPrompt(voice), cache_control: { type: "ephemeral" } }],
-    messages: [{ role: "user", content: buildUserMessage(template, draft) }],
+    system,
+    messages,
   };
 
   let response;
@@ -50,14 +85,6 @@ export async function writePost(template, draft) {
     if (error instanceof Anthropic.APIError) throw new Error(`שגיאה מאנתרופיק (${error.status}): ${error.message}`);
     throw error;
   }
-
   if (response.stop_reason === "refusal") throw new Error("קלוד סירב לבקשה הזו.");
-  const text = response.content
-    .filter((b) => b.type === "text")
-    .map((b) => b.text)
-    .join("");
-  if (!text.trim()) throw new Error("קלוד החזיר תשובה ריקה. נסה שוב.");
-
-  const post = enforceHardRules(text);
-  return { post, banned: findBannedWords(post, voice) };
+  return response;
 }

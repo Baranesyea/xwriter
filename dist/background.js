@@ -1181,9 +1181,9 @@ then adds those predictions up with weights. Write for the actions that carry we
 - Text-only posts had the highest median engagement on X in Buffer's 2025 data. Text is not
   a weaker format here. Do not suggest images or video unless the user's draft mentions one.
 - Hashtags add nothing for reach and make posts look like ads. Use zero. Never more than one.
-- Premium accounts get clearly more reach, and can post long-form (well past 280 chars).
-  Long posts get cut with "Show more" after roughly 280 characters, so the first lines must
-  earn the tap.
+- Without Premium, a post is capped at 280 characters. Premium accounts get more reach and
+  can post long-form, but long posts get cut with "Show more" after roughly 280 characters,
+  so the first lines must earn the tap either way.
 
 ## 2. Hooks (the first line)
 
@@ -1209,13 +1209,15 @@ The first line decides everything. It must work alone, before "Show more".
 - Short lines. Put a line break between thoughts. White space is what makes X posts readable.
 - Sentences of 5-15 words. Mix in a very short one for punch.
 - Lists: use "-" or numbers ("1.", "2."). No emoji bullets unless the user uses them.
-- Length guide:
-  - One-liner / short take: under 280 characters.
-  - Standard post: 280-800 characters. Most posts should live here.
-  - Long post (Premium): up to ~1,500 characters for a real story or lesson. Only if the draft
-    has enough substance. Never pad.
-  - Thread: 4-8 posts. Each post must stand alone and pull to the next. Number them "1/", "2/".
-    The first post is a full hook and says what the thread gives.
+- Length: follow the length rule in each request. It depends on the account.
+  - No Premium (the default): hard limit of 280 characters per post, counting spaces and
+    line breaks. Most posts should land around 180-260. If the idea does not fit, keep the
+    strongest point and cut the rest. Never split one idea into a thread just to fit.
+  - With Premium: long posts are allowed (up to ~1,500 characters for a real story or lesson,
+    only if the draft has enough substance). The first ~280 characters still have to work alone.
+  - Thread: 4-8 posts. Each post must stand alone, fit the length limit on its own, and pull
+    to the next. Number them "1/", "2/". The first post is a full hook and says what the thread
+    gives.
 - End strong: a clear takeaway line, or a specific question to other builders. Not both unless
   it flows.
 - No "In conclusion", no summary that repeats the post.
@@ -1414,12 +1416,16 @@ ${text.trim()}`).join("\n\n");
     "# X writing playbook\n" + playbook_default
   ].filter(Boolean).join("\n\n");
 }
-function buildUserMessage(template, draft) {
+function lengthRule(limit2, premium) {
+  return premium ? 'Length: the account has X Premium, so long posts are allowed. Still, the first ~280 characters must work on their own, because X cuts the post with "Show more" there.' : `Length - HARD LIMIT: the account has no X Premium. Every post must be ${limit2} characters or fewer, counting spaces and line breaks (a link counts as 23). This overrides any length in the template. If the idea does not fit, keep only the strongest point and cut the rest. For a thread, the limit applies to each post.`;
+}
+function buildUserMessage(template, draft, limit2, premium) {
   return [
     `Template: ${template.name}`,
     `How to shape it: ${template.instructions}`,
     `Example of this template (for shape only, do not copy its content):
 ${template.example}`,
+    lengthRule(limit2, premium),
     `Draft:
 <draft>
 ${draft}
@@ -14387,12 +14393,43 @@ var FALLBACK_MODEL_LIST = [
   { id: "claude-haiku-4-5", name: "Claude Haiku 4.5" }
 ];
 async function getSettings() {
-  const stored = await chrome.storage.sync.get(["apiKey", "model", ...VOICE_FIELDS]);
+  const stored = await chrome.storage.sync.get(["apiKey", "model", "premium", ...VOICE_FIELDS]);
   return {
     apiKey: stored.apiKey || "",
     model: stored.model || DEFAULT_MODEL,
+    premium: Boolean(stored.premium),
     voice: Object.fromEntries(VOICE_FIELDS.map((k) => [k, stored[k] || ""]))
   };
+}
+
+// src/xlength.js
+var LIGHT_RANGES = [[0, 4351], [8192, 8205], [8208, 8223], [8242, 8247]];
+var URL_RE = /https?:\/\/\S+/g;
+var URL_WEIGHT = 23;
+var FREE_LIMIT = 280;
+var PREMIUM_LIMIT = 25e3;
+var limitFor = (premium) => premium ? PREMIUM_LIMIT : FREE_LIMIT;
+var segmenter = new Intl.Segmenter("en", { granularity: "grapheme" });
+function xLength(text) {
+  const urls = text.match(URL_RE) || [];
+  let count = urls.length * URL_WEIGHT;
+  for (const { segment } of segmenter.segment(text.replace(URL_RE, ""))) {
+    if (new RegExp("\\p{Extended_Pictographic}", "u").test(segment)) {
+      count += 2;
+      continue;
+    }
+    for (const ch of segment) {
+      const cp = ch.codePointAt(0);
+      count += LIGHT_RANGES.some(([a, b]) => cp >= a && cp <= b) ? 1 : 2;
+    }
+  }
+  return count;
+}
+function splitPosts(text) {
+  return text.split(/^\s*---\s*$/m).map((p) => p.trim()).filter(Boolean);
+}
+function overLimit(text, limit2) {
+  return splitPosts(text).map((post, i) => ({ index: i + 1, length: xLength(post) })).filter((p) => p.length > limit2);
 }
 
 // src/claude.js
@@ -14412,15 +14449,38 @@ async function listModels() {
     return FALLBACK_MODEL_LIST;
   }
 }
+var MAX_SHORTEN_ROUNDS = 2;
 async function writePost(template, draft) {
-  const { apiKey, model, voice } = await getSettings();
+  const { apiKey, model, premium, voice } = await getSettings();
   if (!apiKey) throw new Error("\u05D7\u05E1\u05E8 \u05DE\u05E4\u05EA\u05D7. \u05D4\u05DB\u05E0\u05E1 \u05D0\u05D5\u05EA\u05D5 \u05D1\u05D7\u05DC\u05D5\u05E0\u05D9\u05EA \u05D4\u05E6\u05D3, \u05D1\u05DC\u05E9\u05D5\u05E0\u05D9\u05EA \u05D4\u05D2\u05D3\u05E8\u05D5\u05EA.");
+  const limit2 = limitFor(premium);
+  const messages = [{ role: "user", content: buildUserMessage(template, draft, limit2, premium) }];
+  const system = [{ type: "text", text: buildSystemPrompt(voice), cache_control: { type: "ephemeral" } }];
+  let post = "";
+  let over = [];
+  for (let round = 0; round <= MAX_SHORTEN_ROUNDS; round++) {
+    const response = await callClaude(apiKey, model, system, messages);
+    const text = response.content.filter((b) => b.type === "text").map((b) => b.text).join("");
+    if (!text.trim()) throw new Error("\u05E7\u05DC\u05D5\u05D3 \u05D4\u05D7\u05D6\u05D9\u05E8 \u05EA\u05E9\u05D5\u05D1\u05D4 \u05E8\u05D9\u05E7\u05D4. \u05E0\u05E1\u05D4 \u05E9\u05D5\u05D1.");
+    post = enforceHardRules(text);
+    over = overLimit(post, limit2);
+    if (!over.length) break;
+    const details = over.map((p) => `post ${p.index} is ${p.length}`).join(", ");
+    messages.push({ role: "assistant", content: response.content });
+    messages.push({
+      role: "user",
+      content: `Too long for X: ${details} characters, and the limit is ${limit2} per post. Rewrite it to fit, keeping the hook and the main point. Return only the post.`
+    });
+  }
+  return { post, banned: findBannedWords(post, voice), limit: limit2, over };
+}
+async function callClaude(apiKey, model, system, messages) {
   const params = {
     model,
     max_tokens: 16e3,
     ...NO_EFFORT_MODELS.test(model) ? {} : { output_config: { effort: "medium" } },
-    system: [{ type: "text", text: buildSystemPrompt(voice), cache_control: { type: "ephemeral" } }],
-    messages: [{ role: "user", content: buildUserMessage(template, draft) }]
+    system,
+    messages
   };
   let response;
   try {
@@ -14435,10 +14495,7 @@ async function writePost(template, draft) {
     throw error;
   }
   if (response.stop_reason === "refusal") throw new Error("\u05E7\u05DC\u05D5\u05D3 \u05E1\u05D9\u05E8\u05D1 \u05DC\u05D1\u05E7\u05E9\u05D4 \u05D4\u05D6\u05D5.");
-  const text = response.content.filter((b) => b.type === "text").map((b) => b.text).join("");
-  if (!text.trim()) throw new Error("\u05E7\u05DC\u05D5\u05D3 \u05D4\u05D7\u05D6\u05D9\u05E8 \u05EA\u05E9\u05D5\u05D1\u05D4 \u05E8\u05D9\u05E7\u05D4. \u05E0\u05E1\u05D4 \u05E9\u05D5\u05D1.");
-  const post = enforceHardRules(text);
-  return { post, banned: findBannedWords(post, voice) };
+  return response;
 }
 
 // src/background.js
@@ -14469,8 +14526,8 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   const draft = captured?.text || info.selectionText;
   await sendToTab(tab.id, { type: "xw:toast", text: `\u05DB\u05D5\u05EA\u05D1: ${template.nameHe}...` });
   try {
-    const { post, banned } = await writePost(template, draft);
-    await sendToTab(tab.id, { type: "xw:insert", text: post, banned });
+    const { post, banned, limit: limit2, over } = await writePost(template, draft);
+    await sendToTab(tab.id, { type: "xw:insert", text: post, banned, limit: limit2, over });
   } catch (error) {
     await sendToTab(tab.id, { type: "xw:toast", text: error.message, error: true });
   }

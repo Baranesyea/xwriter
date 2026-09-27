@@ -31,11 +31,18 @@ export function buildSystemPrompt(voice) {
     .join("\n\n");
 }
 
-export function buildUserMessage(template, draft) {
+export function lengthRule(limit, premium) {
+  return premium
+    ? "Length: the account has X Premium, so long posts are allowed. Still, the first ~280 characters must work on their own, because X cuts the post with \"Show more\" there."
+    : `Length - HARD LIMIT: the account has no X Premium. Every post must be ${limit} characters or fewer, counting spaces and line breaks (a link counts as 23). This overrides any length in the template. If the idea does not fit, keep only the strongest point and cut the rest. For a thread, the limit applies to each post.`;
+}
+
+export function buildUserMessage(template, draft, limit, premium) {
   return [
     `Template: ${template.name}`,
     `How to shape it: ${template.instructions}`,
     `Example of this template (for shape only, do not copy its content):\n${template.example}`,
+    lengthRule(limit, premium),
     `Draft:\n<draft>\n${draft}\n</draft>`,
   ].join("\n\n");
 }

@@ -1,13 +1,44 @@
 (() => {
+  // src/xlength.js
+  var LIGHT_RANGES = [[0, 4351], [8192, 8205], [8208, 8223], [8242, 8247]];
+  var URL_RE = /https?:\/\/\S+/g;
+  var URL_WEIGHT = 23;
+  var FREE_LIMIT = 280;
+  var PREMIUM_LIMIT = 25e3;
+  var limitFor = (premium) => premium ? PREMIUM_LIMIT : FREE_LIMIT;
+  var segmenter = new Intl.Segmenter("en", { granularity: "grapheme" });
+  function xLength(text) {
+    const urls = text.match(URL_RE) || [];
+    let count = urls.length * URL_WEIGHT;
+    for (const { segment } of segmenter.segment(text.replace(URL_RE, ""))) {
+      if (new RegExp("\\p{Extended_Pictographic}", "u").test(segment)) {
+        count += 2;
+        continue;
+      }
+      for (const ch of segment) {
+        const cp = ch.codePointAt(0);
+        count += LIGHT_RANGES.some(([a, b]) => cp >= a && cp <= b) ? 1 : 2;
+      }
+    }
+    return count;
+  }
+  function splitPosts(text) {
+    return text.split(/^\s*---\s*$/m).map((p) => p.trim()).filter(Boolean);
+  }
+  function overLimit(text, limit2) {
+    return splitPosts(text).map((post, i) => ({ index: i + 1, length: xLength(post) })).filter((p) => p.length > limit2);
+  }
+
   // src/settings.js
   var VOICE_FIELDS = ["voice_jargon", "voice_banned", "voice_rules", "voice_samples"];
   var SYNC_ITEM_LIMIT = chrome.storage.sync.QUOTA_BYTES_PER_ITEM;
   var DEFAULT_MODEL = "claude-opus-5";
   async function getSettings() {
-    const stored = await chrome.storage.sync.get(["apiKey", "model", ...VOICE_FIELDS]);
+    const stored = await chrome.storage.sync.get(["apiKey", "model", "premium", ...VOICE_FIELDS]);
     return {
       apiKey: stored.apiKey || "",
       model: stored.model || DEFAULT_MODEL,
+      premium: Boolean(stored.premium),
       voice: Object.fromEntries(VOICE_FIELDS.map((k) => [k, stored[k] || ""]))
     };
   }
@@ -50,10 +81,13 @@
       setStatus("write-status", "");
     });
   });
+  var limit = limitFor(false);
   function updateMeta(banned = []) {
-    const count = $("result").value.length;
+    const text = $("result").value;
+    const counts = splitPosts(text).map(xLength).map((n) => `${n}/${limit}`).join(", ");
     const warn = banned.length ? ` | \u05DC\u05D1\u05D3\u05D5\u05E7: ${banned.join(", ")}` : "";
-    $("result-meta").textContent = `${count} \u05EA\u05D5\u05D5\u05D9\u05DD${warn}`;
+    $("result-meta").textContent = `\u05EA\u05D5\u05D5\u05D9\u05DD: ${counts}${warn}`;
+    $("result-meta").classList.toggle("error", overLimit(text, limit).length > 0);
   }
   $("result").addEventListener("input", () => updateMeta());
   $("insert").addEventListener("click", () => {
@@ -65,7 +99,9 @@
     await navigator.clipboard.writeText($("result").value);
     setStatus("write-status", "\u05D4\u05D5\u05E2\u05EA\u05E7.");
   });
-  getSettings().then(({ apiKey, model, voice }) => {
+  getSettings().then(({ apiKey, model, premium, voice }) => {
+    $("premium").checked = premium;
+    limit = limitFor(premium);
     for (const k of VOICE_FIELDS) $(k).value = voice[k];
     $("apiKey").value = apiKey;
     loadModels(model);
@@ -98,7 +134,12 @@
     })
   );
   $("save-settings").addEventListener("click", async () => {
-    await chrome.storage.sync.set({ apiKey: $("apiKey").value.trim(), model: $("model").value || DEFAULT_MODEL });
+    await chrome.storage.sync.set({
+      apiKey: $("apiKey").value.trim(),
+      model: $("model").value || DEFAULT_MODEL,
+      premium: $("premium").checked
+    });
+    limit = limitFor($("premium").checked);
     setStatus("settings-status", "\u05E0\u05E9\u05DE\u05E8.");
     loadModels($("model").value);
   });

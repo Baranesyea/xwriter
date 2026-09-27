@@ -1,3 +1,4 @@
+import { limitFor, overLimit, splitPosts, xLength } from "./xlength.js";
 import { VOICE_FIELDS, SYNC_ITEM_LIMIT, DEFAULT_MODEL, getSettings } from "./settings.js";
 
 const $ = (id) => document.getElementById(id);
@@ -44,10 +45,14 @@ $("generate").addEventListener("click", () => {
   });
 });
 
+let limit = limitFor(false);
+
 function updateMeta(banned = []) {
-  const count = $("result").value.length;
+  const text = $("result").value;
+  const counts = splitPosts(text).map(xLength).map((n) => `${n}/${limit}`).join(", ");
   const warn = banned.length ? ` | לבדוק: ${banned.join(", ")}` : "";
-  $("result-meta").textContent = `${count} תווים${warn}`;
+  $("result-meta").textContent = `תווים: ${counts}${warn}`;
+  $("result-meta").classList.toggle("error", overLimit(text, limit).length > 0);
 }
 $("result").addEventListener("input", () => updateMeta());
 
@@ -62,7 +67,9 @@ $("copy").addEventListener("click", async () => {
 });
 
 // Voice tab - autosave each field to sync storage
-getSettings().then(({ apiKey, model, voice }) => {
+getSettings().then(({ apiKey, model, premium, voice }) => {
+  $("premium").checked = premium;
+  limit = limitFor(premium);
   for (const k of VOICE_FIELDS) $(k).value = voice[k];
   $("apiKey").value = apiKey;
   loadModels(model);
@@ -100,7 +107,12 @@ document.querySelectorAll("[data-voice]").forEach((el) =>
 
 // Settings tab
 $("save-settings").addEventListener("click", async () => {
-  await chrome.storage.sync.set({ apiKey: $("apiKey").value.trim(), model: $("model").value || DEFAULT_MODEL });
+  await chrome.storage.sync.set({
+    apiKey: $("apiKey").value.trim(),
+    model: $("model").value || DEFAULT_MODEL,
+    premium: $("premium").checked,
+  });
+  limit = limitFor($("premium").checked);
   setStatus("settings-status", "נשמר.");
   loadModels($("model").value);
 });

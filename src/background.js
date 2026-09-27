@@ -36,8 +36,8 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   await sendToTab(tab.id, { type: "xw:toast", text: `כותב: ${template.nameHe}...` });
 
   try {
-    const { post, banned } = await writePost(template, draft);
-    await sendToTab(tab.id, { type: "xw:insert", text: post, banned });
+    const { post, banned, limit, over } = await writePost(template, draft);
+    await sendToTab(tab.id, { type: "xw:insert", text: post, banned, limit, over });
   } catch (error) {
     await sendToTab(tab.id, { type: "xw:toast", text: error.message, error: true });
   }
